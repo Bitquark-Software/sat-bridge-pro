@@ -1,4 +1,4 @@
-name: Build and Deploy App to GitHub Pages
+name: Build and Deploy App
 
 on:
   push:
@@ -24,18 +24,12 @@ jobs:
       - name: Build Vite app
         run: npm run build
 
-      - name: Copy build to root
-        run: |
-          rm -rf ./public
-          mv dist/* .
-          rm -rf dist
-
-      - name: Commit and push build
+      - name: Commit and push dist
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add .
-          git commit -m "Deploy Vite build [skip ci]" || echo "No changes to commit"
+          git add dist
+          git commit -m "Update dist build [skip ci]" || echo "No changes to commit"
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
