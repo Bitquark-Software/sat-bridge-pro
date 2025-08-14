@@ -1,7 +1,8 @@
+/// <reference types="node" />
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-const isGitHubPages = (import.meta.env.MODE === 'production')
+const isGitHubPages = process.env.NODE_ENV === 'production'
 
 // https://vite.dev/config/
 export default defineConfig({
