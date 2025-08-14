@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 
-const LoginForm: React.FC = () => {
+interface LoginFormProps {
+  onSwitchToSignup: () => void;
+}
+
+const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -111,9 +115,12 @@ const LoginForm: React.FC = () => {
         {/* Enlace de registro */}
         <div className="text-center mt-6">
           <span className="text-gray-400 text-sm">¿No tienes una cuenta? </span>
-          <a href="#" className="text-sm text-gray-600 underline hover:text-gray-800">
+          <button 
+            onClick={onSwitchToSignup}
+            className="text-sm text-gray-600 underline hover:text-gray-800 bg-transparent border-none cursor-pointer"
+          >
             Crea una
-          </a>
+          </button>
         </div>
       </div>
     </div>
