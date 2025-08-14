@@ -6,4 +6,8 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   base: '/sat-bridge-pro/',
+  build: {
+    outDir: 'build', // <-- genera directamente en build/
+    emptyOutDir: true, // limpia build antes de compilar
+  },
 })
