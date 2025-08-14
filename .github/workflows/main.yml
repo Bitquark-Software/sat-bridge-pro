@@ -28,10 +28,10 @@ jobs:
           NODE_ENV: production
         run: npm run build
 
-      - name: Move dist to build
+      - name: Copy dist to build
         run: |
           rm -rf build
-          mv dist build
+          cp -r dist build
 
       - name: Commit build folder
         run: |
