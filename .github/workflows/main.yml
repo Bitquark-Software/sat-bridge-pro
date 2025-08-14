@@ -1,4 +1,4 @@
-name: Build and Deploy App
+name: Build and Deploy Vite App
 
 on:
   push:
@@ -21,17 +21,23 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Build Vite app
+      - name: Clean and Build
         env:
           NODE_ENV: production
-        run: npm run build
+        run: |
+          rm -rf dist/*
+          npm run build
 
-      - name: Commit and push dist
+      - name: Copy dist to root
+        run: |
+          cp -r dist/* .
+
+      - name: Commit and push
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add dist
-          git commit -m "Update dist build [skip ci]" || echo "No changes to commit"
+          git add .
+          git commit -m "Deploy Vite build [skip ci]" || echo "No changes to commit"
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
