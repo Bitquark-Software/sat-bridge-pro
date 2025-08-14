@@ -30,8 +30,8 @@ jobs:
 
       - name: Copy dist to build
         run: |
-          rm -rf build
-          cp -r dist build
+          rm -rf docs
+          cp -r dist docs
 
       - name: Commit build folder
         run: |
