@@ -1,7 +1,7 @@
 {
   "name": "sat-bridge-pro",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.0.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -21,9 +21,8 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.33.0",
-    "@types/node": "^24.2.1",
-    "@types/react": "^19.1.10",
     "@types/node": "^20.4.0",
+    "@types/react": "^19.1.10",
     "@types/react-dom": "^19.1.7",
     "@vitejs/plugin-react": "^5.0.0",
     "eslint": "^9.33.0",
