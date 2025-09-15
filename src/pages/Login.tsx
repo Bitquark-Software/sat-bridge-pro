@@ -97,12 +97,6 @@ const SATAuthComponent = () => {
       newErrors.rfc = '';
     }
     
-    if (name === 'phone' && processedValue && !validatePhone(processedValue)) {
-      newErrors.phone = 'Teléfono debe tener 10 dígitos';
-    } else if (name === 'phone') {
-      newErrors.phone = '';
-    }
-    
     if (name === 'confirmPassword' && processedValue !== registerData.password) {
       newErrors.confirmPassword = 'Las contraseñas no coinciden';
     } else if (name === 'confirmPassword') {
@@ -156,8 +150,6 @@ const SATAuthComponent = () => {
     if (!registerData.lastName) newErrors.lastName = 'Apellidos requeridos';
     if (!registerData.email) newErrors.registerEmail = 'Email requerido';
     else if (!validateEmail(registerData.email)) newErrors.registerEmail = 'Formato de email inválido';
-    if (!registerData.phone) newErrors.phone = 'Teléfono requerido';
-    else if (!validatePhone(registerData.phone)) newErrors.phone = 'Teléfono debe tener 10 dígitos';
     if (!registerData.rfc) newErrors.rfc = 'RFC requerido';
     else if (!validateRFC(registerData.rfc)) newErrors.rfc = 'RFC inválido';
     if (!registerData.password) newErrors.password = 'Contraseña requerida';
@@ -282,7 +274,7 @@ const SATAuthComponent = () => {
               {/* Tab de Registro */}
               <TabsContent value="register">
                 <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="firstName">Nombre</Label>
                       <div className="relative">
@@ -300,22 +292,7 @@ const SATAuthComponent = () => {
                       {errors.firstName && <p className="text-xs text-red-500">{errors.firstName}</p>}
                     </div>
                     
-                    <div className="space-y-2">
-                      <Label htmlFor="lastName">Apellidos</Label>
-                      <div className="relative">
-                        <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                        <Input
-                          id="lastName"
-                          name="lastName"
-                          type="text"
-                          placeholder="Pérez García"
-                          value={registerData.lastName}
-                          onChange={handleRegisterChange}
-                          className={`pl-10 ${errors.lastName ? 'border-red-500' : ''}`}
-                        />
-                      </div>
-                      {errors.lastName && <p className="text-xs text-red-500">{errors.lastName}</p>}
-                    </div>
+                    
                   </div>
                   
                   <div className="space-y-2">
@@ -335,42 +312,8 @@ const SATAuthComponent = () => {
                     {errors.registerEmail && <p className="text-sm text-red-500">{errors.registerEmail}</p>}
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">Teléfono</Label>
-                      <div className="relative">
-                        <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                        <Input
-                          id="phone"
-                          name="phone"
-                          type="tel"
-                          placeholder="5551234567"
-                          value={registerData.phone}
-                          onChange={handleRegisterChange}
-                          maxLength={10}
-                          className={`pl-10 ${errors.phone ? 'border-red-500' : ''}`}
-                        />
-                      </div>
-                      {errors.phone && <p className="text-xs text-red-500">{errors.phone}</p>}
-                    </div>
+                  <div className="grid grid-cols-1 gap-4">
                     
-                    <div className="space-y-2">
-                      <Label htmlFor="rfc">RFC</Label>
-                      <div className="relative">
-                        <FileText className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                        <Input
-                          id="rfc"
-                          name="rfc"
-                          type="text"
-                          placeholder="XAXX010101000"
-                          value={registerData.rfc}
-                          onChange={handleRegisterChange}
-                          maxLength={13}
-                          className={`pl-10 ${errors.rfc ? 'border-red-500' : ''}`}
-                        />
-                      </div>
-                      {errors.rfc && <p className="text-xs text-red-500">{errors.rfc}</p>}
-                    </div>
                   </div>
                   
                   <div className="space-y-2">
