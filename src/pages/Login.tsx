@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import "../style/login.css"
 import { Building2, Eye, EyeOff, Mail, Lock, User, Phone, FileText } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -142,7 +143,6 @@ const SATAuthComponent = () => {
         message: '¡Inicio de sesión exitoso! Bienvenido al portal SAT.'
       });
       
-      // Aquí normalmente harías la llamada a tu API
       console.log('Login data:', loginData);
     }, 2000);
   };
@@ -190,7 +190,7 @@ const SATAuthComponent = () => {
   };
   
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-indigo-900 to-purple-900 flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-6 overflow-auto">
       <div className="w-full max-w-md">
         {/* Header con logo */}
         <div className="text-center mb-6">
