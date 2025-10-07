@@ -7,6 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Chrome } from 'lucide-react';  
+import { useNavigate } from 'react-router-dom';
+
 
 const SATAuthComponent = () => {
   // Estados para Login
@@ -69,6 +72,11 @@ const SATAuthComponent = () => {
   const handleRegisterChange = (e: { target: { name: any; value: any; }; }) => {
     const { name, value } = e.target;
     let processedValue = value;
+
+    const handleGoogleLogin = () => {
+    // Redirigir a tu endpoint de Google OAuth
+    window.location.href = `${API_BASE_URL}/auth/google`;
+    };
     
     // Formateo automático para RFC
     if (name === 'rfc') {
@@ -262,6 +270,22 @@ const SATAuthComponent = () => {
                   >
                     {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
                   </Button>
+
+                    {/* Divider */}
+                      <div className="relative">
+                        <div className="absolute inset-0 flex items-center">
+                          <span className="w-full border-t" />
+                        </div>
+                        <div className="relative flex justify-center text-xs uppercase">
+                          <span className="bg-background px-2 text-muted-foreground">O continúa con</span>
+                        </div>
+                      </div>
+
+                       {/* Google Login Button */}
+                           
+                   
+
+                    
                   
                   <div className="text-center">
                     <a href="#" className="text-sm text-blue-600 hover:underline">
@@ -269,6 +293,8 @@ const SATAuthComponent = () => {
                     </a>
                   </div>
                 </div>
+
+                
               </TabsContent>
               
               {/* Tab de Registro */}
