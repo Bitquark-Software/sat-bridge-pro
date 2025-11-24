@@ -98,7 +98,7 @@ const handleLogin = async () => {
       body: JSON.stringify({
         email: loginData.email,
         password: loginData.password,
-        name: 'iram ruiz' 
+        name: loginData.email.split('@')[0]
       }),
     });
     const data = await res.json();
