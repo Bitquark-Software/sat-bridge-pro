@@ -77,38 +77,45 @@ const SATAuthComponent = () => {
   };
 
   // LOGIN
-  const handleLogin = async () => {
-    setIsLoading(true);
-    setAlert({ show: false, type: '', message: '' });
-    const newErrors: any = {};
-    if (!loginData.email) newErrors.loginEmail = 'Email requerido';
-    else if (!validateEmail(loginData.email)) newErrors.loginEmail = 'Formato de email inválido';
-    if (!loginData.password) newErrors.loginPassword = 'Contraseña requerida';
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      setIsLoading(false);
-      return;
-    }
-    try {
-      const res = await fetch(`${API_BASE_URL}/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(loginData),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setAlert({ show: true, type: 'error', message: data.message || 'Error al iniciar sesión' });
-      } else {
-        setAlert({ show: true, type: 'success', message: '¡Inicio de sesión exitoso!' });
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        setTimeout(() => navigate('/dashboard', { state: { user: data.user } }), 1000);
-      }
-    } catch {
-      setAlert({ show: true, type: 'error', message: 'Error de conexión al servidor' });
-    }
+const handleLogin = async () => {
+  setIsLoading(true);
+  setAlert({ show: false, type: '', message: '' });
+
+  const newErrors: any = {};
+  if (!loginData.email) newErrors.loginEmail = 'Email requerido';
+  else if (!validateEmail(loginData.email)) newErrors.loginEmail = 'Formato de email inválido';
+  if (!loginData.password) newErrors.loginPassword = 'Contraseña requerida';
+  if (Object.keys(newErrors).length > 0) {
+    setErrors(newErrors);
     setIsLoading(false);
-  };
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: loginData.email,
+        password: loginData.password,
+        name: loginData.email.split('@')[0]
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      setAlert({ show: true, type: 'error', message: data.message || 'Error al iniciar sesión' });
+    } else {
+      setAlert({ show: true, type: 'success', message: '¡Inicio de sesión exitoso!' });
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      setTimeout(() => navigate('/dashboard', { state: { user: data.user } }), 1000);
+    }
+  } catch {
+    setAlert({ show: true, type: 'error', message: 'Error de conexión al servidor' });
+  }
+  setIsLoading(false);
+};
+
 
   // REGISTRO
   const handleRegister = async () => {
@@ -212,7 +219,7 @@ const SATAuthComponent = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 overflow-auto">
+    <div className="min-h-screen flex items-center justify-center p-6 overflow-auto bg-gradient-to-br from-[#1e3c72] via-[#2a5298] to-[#4c1d95]">
       <div className="w-full max-w-md">
         {/* Header con logo */}
         <div className="text-center mb-6">
