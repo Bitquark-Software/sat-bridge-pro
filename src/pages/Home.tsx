@@ -1,9 +1,28 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom'
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { ChevronDown, ChevronRight, User, FileText, Download, BarChart3, UserCircle, LogOut } from 'lucide-react';
 
 const Home = () => {
+
+
+  const [userData, setUserData] = useState({
+    name: 'Usuario',
+    tipo: 'P. Física',
+    initial: 'U'
+  });
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      const user = JSON.parse(storedUser);
+      setUserData({
+        name: user.name || user.username || 'Usuario',
+        tipo: user.tipo || user.userType || 'P. Física',
+        initial: (user.name || user.username || 'U')[0].toUpperCase()
+      });
+    }
+  }, []);
 
   const navigate = useNavigate()
 
@@ -11,8 +30,6 @@ const Home = () => {
   navigate('/login')
   }
 
-
-  
   const [expandedMenus, setExpandedMenus] = useState({
     miFiel: true,
     cfdis: false,
@@ -57,11 +74,11 @@ const Home = () => {
           {/* User Profile */}
           <div className="flex items-center gap-3 mb-8 pb-6 border-b border-gray-200">
             <div className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center text-white font-semibold">
-              F
+              {userData.initial}
             </div>
             <div>
-              <div className="font-semibold text-gray-900">Fernando</div>
-              <div className="text-sm text-gray-500">P. Física</div>
+              <div className="font-semibold text-gray-900">{userData.name}</div>
+              <div className="text-sm text-gray-500">{userData.tipo}</div>
             </div>
           </div>
 
@@ -81,13 +98,17 @@ const Home = () => {
                 </div>
                 {expandedMenus.miFiel ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
               </button>
-              {expandedMenus.miFiel && (
-                <div className="ml-6 mt-1 space-y-1">
-                  <div className="px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded cursor-pointer">
-                    Administrar
-                  </div>
+             {expandedMenus.miFiel && (
+              <div className="ml-6 mt-1 space-y-1">
+                <div
+                  onClick={() => navigate('/fiel')}
+                  className="px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded cursor-pointer"
+                >
+                  Administrar
                 </div>
-              )}
+              </div>
+          )}
+
             </div>
 
             {/* CFDIs */}
@@ -230,5 +251,4 @@ const Home = () => {
   );
 };
 
-
-export default Home
+export default Home;

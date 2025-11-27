@@ -286,6 +286,9 @@ const handleLogin = async () => {
                       </button>
                     </div>
                     {errors.loginPassword && <p className="text-sm text-red-500">{errors.loginPassword}</p>}
+                    <p className="text-xs text-gray-500">
+                        contraseña incorrecta
+                    </p>
                   </div>
                   <Button 
                     onClick={handleLogin}
@@ -293,6 +296,13 @@ const handleLogin = async () => {
                     disabled={isLoading}
                   >
                     {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+                  </Button>
+                  <Button
+                    onClick={() => window.location.href = 'http://localhost:3000/v1/auth/google'}
+                    className="w-full bg-white hover:bg-gray-100 text-gray-800 font-medium py-2 flex items-center justify-center gap-2 border border-gray-300 mt-2"
+                  >
+                    <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="h-5 w-5" />
+                    Iniciar sesión con Google
                   </Button>
                   <div className="text-center">
                     <button
@@ -380,6 +390,9 @@ const handleLogin = async () => {
                       </button>
                     </div>
                     {errors.password && <p className="text-sm text-red-500">{errors.password}</p>}
+                     <p className="text-xs text-gray-500">
+                        Usa al menos 8 caracteres con mayúsculas, minúsculas y números para una contraseña segura.
+                    </p>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="confirmPassword">Confirmar Contraseña</Label>
@@ -421,6 +434,8 @@ const handleLogin = async () => {
               <p className="mt-1">Servicio de Administración Tributaria</p>
             </div>
           </CardFooter>
+    
+
         </Card>
         {/* Modal para recuperar/restablecer contraseña */}
         {showForgotModal && (
