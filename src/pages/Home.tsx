@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { ChevronDown, ChevronRight, User, FileText, BarChart3, UserCircle, LogOut, LayoutDashboard } from 'lucide-react';
 import MiFiel from './MiFiel'
+import DescargaMasiva from './DescargaMasiva'
 
 const Home = () => {
 
@@ -28,6 +29,7 @@ const Home = () => {
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const isFiel = pathname === '/fiel'
+  const isMasiva = pathname === '/descarga-masiva'
   const isHome = pathname === '/home' || pathname === '/dashboard' || pathname === '/'
 
   const handleLogout = () => {
@@ -36,7 +38,7 @@ const Home = () => {
 
   const [expandedMenus, setExpandedMenus] = useState({
     miFiel: true,
-    cfdis: false,
+    cfdis: pathname === '/descarga-masiva',
     reportes: false,
     miCuenta: false
   });
@@ -141,9 +143,13 @@ const Home = () => {
                   <div className="px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded cursor-pointer">
                     Visualizador
                   </div>
-                  <div className="px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded cursor-pointer">
+                  <button
+                    type="button"
+                    onClick={() => navigate('/descarga-masiva')}
+                    className={`block w-full text-left px-3 py-2 text-sm rounded ${isMasiva ? 'bg-gray-100 text-gray-900 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}
+                  >
                     Descarga masiva
-                  </div>
+                  </button>
                 </div>
               )}
             </div>
@@ -191,6 +197,8 @@ const Home = () => {
 
           {isFiel ? (
             <MiFiel />
+          ) : isMasiva ? (
+            <DescargaMasiva />
           ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Ingresos Chart */}

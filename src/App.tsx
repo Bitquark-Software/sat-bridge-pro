@@ -12,6 +12,7 @@ function App() {
         <Route path="/home" element={<Home />} />
         <Route path="/dashboard" element={<Home />} />
         <Route path="/fiel" element={<Home />} />
+        <Route path="/descarga-masiva" element={<Home />} />
       </Routes>
     </div>
   )
