@@ -11,6 +11,11 @@ import { useNavigate } from 'react-router-dom';
 
 const API_BASE_URL = "http://localhost:3000/v1/auth";
 
+const apiErrorMessage = (data: { message?: string; errors?: Record<string, string> }, fallback: string) => {
+  const msgs = Object.values(data?.errors || {}).filter(Boolean);
+  return msgs.length ? msgs.join('. ') : (data?.message || fallback);
+};
+
 const SATAuthComponent = () => {
   // Estados para Login
   const [loginData, setLoginData] = useState({ email: '', password: '' });
@@ -103,10 +108,10 @@ const handleLogin = async () => {
     });
     const data = await res.json();
     if (!res.ok) {
-      setAlert({ show: true, type: 'error', message: data.message || 'Error al iniciar sesión' });
+      setAlert({ show: true, type: 'error', message: apiErrorMessage(data, 'Error al iniciar sesión') });
     } else {
       setAlert({ show: true, type: 'success', message: '¡Inicio de sesión exitoso!' });
-      localStorage.setItem('token', data.token);
+      localStorage.setItem('token', data.tokens?.access?.token);
       localStorage.setItem('user', JSON.stringify(data.user));
       setTimeout(() => navigate('/dashboard', { state: { user: data.user } }), 1000);
     }
@@ -147,7 +152,14 @@ const handleLogin = async () => {
       });
       const data = await res.json();
       if (!res.ok) {
-        setAlert({ show: true, type: 'error', message: data.message || 'Error al registrar' });
+        const field = Object.entries(data.errors || {}).reduce((acc: Record<string, string>, [k, v]) => {
+          const name = k.split('.').pop()?.toLowerCase();
+          if (name === 'password') acc.password = String(v);
+          if (name === 'email') acc.registerEmail = String(v);
+          return acc;
+        }, {});
+        if (Object.keys(field).length) setErrors((prev: any) => ({ ...prev, ...field }));
+        setAlert({ show: true, type: 'error', message: apiErrorMessage(data, 'Error al registrar') });
       } else {
         setAlert({ show: true, type: 'success', message: '¡Registro exitoso! Ahora puedes iniciar sesión.' });
       }
@@ -172,7 +184,7 @@ const handleLogin = async () => {
       });
       const data = await res.json();
       if (!res.ok) {
-        setForgotAlert({ show: true, type: 'error', message: data.message || 'Error al enviar email' });
+        setForgotAlert({ show: true, type: 'error', message: apiErrorMessage(data, 'Error al enviar email') });
       } else {
         setForgotAlert({ show: true, type: 'success', message: '¡Revisa tu correo para el enlace de recuperación!' });
         setForgotStep('reset');
@@ -204,7 +216,7 @@ const handleLogin = async () => {
       });
       const data = await res.json();
       if (!res.ok) {
-        setForgotAlert({ show: true, type: 'error', message: data.message || 'Error al restablecer' });
+        setForgotAlert({ show: true, type: 'error', message: apiErrorMessage(data, 'Error al restablecer') });
       } else {
         setForgotAlert({ show: true, type: 'success', message: '¡Contraseña restablecida! Ya puedes iniciar sesión.' });
         setTimeout(() => setShowForgotModal(false), 1500);

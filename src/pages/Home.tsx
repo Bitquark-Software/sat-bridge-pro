@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom'
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { ChevronDown, ChevronRight, User, FileText, Download, BarChart3, UserCircle, LogOut } from 'lucide-react';
+import { ChevronDown, ChevronRight, User, FileText, BarChart3, UserCircle, LogOut, LayoutDashboard } from 'lucide-react';
+import MiFiel from './MiFiel'
 
 const Home = () => {
 
@@ -25,6 +26,9 @@ const Home = () => {
   }, []);
 
   const navigate = useNavigate()
+  const { pathname } = useLocation()
+  const isFiel = pathname === '/fiel'
+  const isHome = pathname === '/home' || pathname === '/dashboard' || pathname === '/'
 
   const handleLogout = () => {
   navigate('/login')
@@ -57,7 +61,7 @@ const Home = () => {
     { month: 'Jun', value: 3900 }
   ];
 
-  const toggleMenu = (menu) => {
+  const toggleMenu = (menu: keyof typeof expandedMenus) => {
     setExpandedMenus(prev => ({
       ...prev,
       [menu]: !prev[menu]
@@ -85,6 +89,14 @@ const Home = () => {
           {/* Menu */}
           <nav className="space-y-1">
             <div className="text-sm font-medium text-gray-500 mb-4">Mi contabilidad</div>
+            <button
+              type="button"
+              onClick={() => navigate('/home')}
+              className={`flex items-center gap-2 w-full px-3 py-2 text-sm rounded ${isHome ? 'bg-gray-100 text-gray-900 font-medium' : 'text-gray-700 hover:bg-gray-50'}`}
+            >
+              <LayoutDashboard className="w-4 h-4" />
+              Home
+            </button>
             
             {/* Mi FIEL */}
             <div>
@@ -100,12 +112,13 @@ const Home = () => {
               </button>
              {expandedMenus.miFiel && (
               <div className="ml-6 mt-1 space-y-1">
-                <div
+                <button
+                  type="button"
                   onClick={() => navigate('/fiel')}
-                  className="px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded cursor-pointer"
+                  className={`block w-full text-left px-3 py-2 text-sm rounded ${isFiel ? 'bg-gray-100 text-gray-900 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}
                 >
                   Administrar
-                </div>
+                </button>
               </div>
           )}
 
@@ -176,6 +189,9 @@ const Home = () => {
             </button>
           </div>
 
+          {isFiel ? (
+            <MiFiel />
+          ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Ingresos Chart */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -245,6 +261,7 @@ const Home = () => {
               </ResponsiveContainer>
             </div>
           </div>
+          )}
         </div>
       </main>
     </div>

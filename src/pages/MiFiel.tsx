@@ -1,427 +1,327 @@
-import React, { useState } from 'react';
+import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Upload, CheckCircle, AlertCircle, Trash2, Plus, Key, FileText } from 'lucide-react';
+import { Upload, CheckCircle, AlertCircle, Trash2, Plus, Key, FileText } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+
+const API = 'http://localhost:3000/v1/datos-fiscales';
+
+const authHeaders = (): HeadersInit => {
+  const token = localStorage.getItem('token') || localStorage.getItem('access_token') || '';
+  return { Authorization: `Bearer ${token}` };
+};
+
+type FielRecord = { rfc: string; created_at: string; updated_at: string };
+
+const fmtDate = (iso?: string) =>
+  iso ? new Date(iso).toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' }) : '—';
 
 const MiFiel = () => {
-  const [hasValidFiel, setHasValidFiel] = useState(true); // Cambia a false para modo sin FIEL
-  const [showForm, setShowForm] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState({});
-  
-  const [formData, setFormData] = useState({
-    rfc: '',
-    password: '',
-    keyFile: null,
-    cerFile: null
-  });
+  const navigate = useNavigate();
+  const [phase, setPhase] = useState<'loading' | 'empty' | 'ready' | 'form'>('loading');
+  const [fiel, setFiel] = useState<FielRecord | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [banner, setBanner] = useState('');
+  const [formData, setFormData] = useState({ rfc: '', password: '', keyFile: null as File | null, cerFile: null as File | null });
 
-  // Datos de FIEL existente (simulado)
-  const [fielData, setFielData] = useState({
-    rfc: 'XAXX010101000',
-    nombre: 'Fernando Pérez',
-    vigenciaInicio: '2023-01-15',
-    vigenciaFin: '2027-01-15',
-    certificadoSerial: 'A1B2C3D4E5F6G7H8'
-  });
-
-  const validateRFC = (rfc) => {
-    const rfcPattern = /^([A-ZÑ&]{3,4}\d{6}[A-V1-9][A-Z1-9][0-9A])$/;
-    return rfcPattern.test(rfc.toUpperCase());
+  const loadFiel = async () => {
+    const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+    const res = await fetch(API, { headers: authHeaders() });
+    if (res.status === 401) {
+      navigate('/login');
+      return;
+    }
+    if (res.status === 404) {
+      setFiel(null);
+      setPhase('empty');
+      return;
+    }
+    const json = await res.json();
+    if (!res.ok) {
+      setBanner(json.message || 'No se pudo cargar la FIEL');
+      setPhase('empty');
+      return;
+    }
+    const d = json.data;
+    setFiel({ rfc: d.rfc, created_at: d.created_at, updated_at: d.updated_at });
+    setPhase('ready');
   };
 
-  const handleInputChange = (e) => {
+  useEffect(() => {
+    loadFiel().catch(() => {
+      setBanner('Error de conexión al servidor');
+      setPhase('empty');
+    });
+  }, []);
+
+  const validateRFC = (rfc: string) => /^([A-ZÑ&]{3,4}\d{6}[A-V1-9][A-Z1-9][0-9A])$/.test(rfc.toUpperCase());
+
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    
-    if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
-    }
+    setFormData((prev) => ({ ...prev, [name]: name === 'rfc' ? value.toUpperCase() : value }));
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: '' }));
   };
 
-  const handleFileChange = (e, fileType) => {
-    const file = e.target.files[0];
-    setFormData(prev => ({
-      ...prev,
-      [fileType]: file
-    }));
-    
-    if (errors[fileType]) {
-      setErrors(prev => ({
-        ...prev,
-        [fileType]: ''
-      }));
-    }
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>, fileType: 'keyFile' | 'cerFile') => {
+    const file = e.target.files?.[0] || null;
+    setFormData((prev) => ({ ...prev, [fileType]: file }));
+    if (errors[fileType]) setErrors((prev) => ({ ...prev, [fileType]: '' }));
   };
 
   const validateForm = () => {
-    const newErrors = {};
-
-    if (!formData.rfc.trim()) {
-      newErrors.rfc = 'El RFC es requerido';
-    } else if (!validateRFC(formData.rfc)) {
-      newErrors.rfc = 'Formato de RFC inválido';
-    }
-
-    if (!formData.password.trim()) {
-      newErrors.password = 'La contraseña es requerida';
-    }
-
-    if (!formData.keyFile) {
-      newErrors.keyFile = 'Debes seleccionar el archivo de clave privada (.key)';
-    }
-
-    if (!formData.cerFile) {
-      newErrors.cerFile = 'Debes seleccionar el archivo de certificado (.cer)';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    const next: Record<string, string> = {};
+    if (!formData.rfc.trim()) next.rfc = 'El RFC es requerido';
+    else if (!validateRFC(formData.rfc)) next.rfc = 'Formato de RFC inválido';
+    if (!formData.password.trim()) next.password = 'La contraseña es requerida';
+    else if (formData.password.length < 8) next.password = 'La contraseña debe tener al menos 8 caracteres';
+    if (!formData.keyFile) next.keyFile = 'Selecciona el archivo .key';
+    else if (!formData.keyFile.name.toLowerCase().endsWith('.key')) next.keyFile = 'El archivo debe ser .key';
+    if (!formData.cerFile) next.cerFile = 'Selecciona el archivo .cer';
+    else if (!formData.cerFile.name.toLowerCase().endsWith('.cer')) next.cerFile = 'El archivo debe ser .cer';
+    setErrors(next);
+    return Object.keys(next).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    
-    if (!validateForm()) {
+    if (!validateForm()) return;
+    setSaving(true);
+    setBanner('');
+    try {
+      if (fiel) {
+        const del = await fetch(API, { method: 'DELETE', headers: authHeaders() });
+        if (!del.ok && del.status !== 404) {
+          const j = await del.json().catch(() => ({}));
+          setBanner(j.message || 'No se pudo reemplazar la FIEL');
+          setSaving(false);
+          return;
+        }
+      }
+      const body = new FormData();
+      body.append('rfc', formData.rfc.trim());
+      body.append('password', formData.password);
+      body.append('cer_file', formData.cerFile!);
+      body.append('key_file', formData.keyFile!);
+      const res = await fetch(API, { method: 'POST', headers: authHeaders(), body });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setBanner(json.message || 'Error al registrar la FIEL');
+        setSaving(false);
+        return;
+      }
+      setFormData({ rfc: '', password: '', keyFile: null, cerFile: null });
+      await loadFiel();
+    } catch {
+      setBanner('Error de conexión al servidor');
+    }
+    setSaving(false);
+  };
+
+  const handleDeleteFiel = async () => {
+    if (!window.confirm('¿Eliminar tu FIEL? Tendrás que cargarla de nuevo.')) return;
+    setBanner('');
+    const res = await fetch(API, { method: 'DELETE', headers: authHeaders() });
+    if (res.status === 401) {
+      navigate('/login');
       return;
     }
-
-    setLoading(true);
-    
-    // Simular validación de FIEL
-    setTimeout(() => {
-      setLoading(false);
-      setHasValidFiel(true);
-      setShowForm(false);
-      alert('¡FIEL validada exitosamente!');
-    }, 2000);
-  };
-
-  const handleDeleteFiel = () => {
-    if (window.confirm('¿Estás seguro de que deseas eliminar tu FIEL? Deberás cargarla nuevamente.')) {
-      setHasValidFiel(false);
-      setShowForm(false);
-      setFielData(null);
-      setFormData({
-        rfc: '',
-        password: '',
-        keyFile: null,
-        cerFile: null
-      });
+    if (!res.ok && res.status !== 404) {
+      const json = await res.json().catch(() => ({}));
+      setBanner(json.message || 'No se pudo eliminar la FIEL');
+      return;
     }
+    setFiel(null);
+    setPhase('empty');
   };
 
-    const navigate = useNavigate();
+  const bannerAlert = banner ? (
+    <Alert variant="destructive" className="mb-4">
+      <AlertCircle />
+      <AlertTitle>Error</AlertTitle>
+      <AlertDescription>{banner}</AlertDescription>
+    </Alert>
+  ) : null;
 
-  const handleBackToMenu = () => {
-      navigate('/home')
-  };
-
-  // Vista cuando NO tiene FIEL validada
-  if (!hasValidFiel && !showForm) {
+  if (phase === 'loading') {
     return (
-      <div className="min-h-screen bg-gray-50 p-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Administrar Mi FIEL</h1>
-            <p className="text-gray-600">Gestiona tu Firma Electrónica Avanzada del SAT</p>
+      <Card id="fiel" aria-busy="true">
+        <CardHeader>
+          <div className="h-5 w-40 bg-muted rounded animate-pulse" />
+          <div className="h-4 w-72 bg-muted rounded animate-pulse" />
+        </CardHeader>
+        <CardContent className="grid gap-6 sm:grid-cols-2">
+          <div className="space-y-2">
+            <div className="h-3 w-12 bg-muted rounded animate-pulse" />
+            <div className="h-7 w-36 bg-muted rounded animate-pulse" />
           </div>
+          <div className="space-y-2">
+            <div className="h-3 w-20 bg-muted rounded animate-pulse" />
+            <div className="h-6 w-44 bg-muted rounded animate-pulse" />
+          </div>
+          <div className="space-y-2 sm:col-span-2">
+            <div className="h-3 w-36 bg-muted rounded animate-pulse" />
+            <div className="h-6 w-44 bg-muted rounded animate-pulse" />
+          </div>
+        </CardContent>
+        <CardFooter className="gap-2">
+          <div className="h-9 w-36 bg-muted rounded-md animate-pulse" />
+          <div className="h-9 w-32 bg-muted rounded-md animate-pulse" />
+        </CardFooter>
+      </Card>
+    );
+  }
 
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Key className="w-10 h-10 text-gray-400" />
+  if (phase === 'empty') {
+    return (
+      <div id="fiel">
+        {bannerAlert}
+        <Card>
+          <CardHeader className="items-center text-center">
+            <div className="bg-muted mb-2 flex size-14 items-center justify-center rounded-full">
+              <Key className="text-muted-foreground size-7" />
             </div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">No tienes una FIEL registrada</h2>
-            <p className="text-gray-600 mb-8 max-w-md mx-auto">
-              Para comenzar a usar los servicios del SAT, necesitas registrar tu Firma Electrónica Avanzada (FIEL).
-            </p>
-            <button
-              onClick={() => setShowForm(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium inline-flex items-center gap-2 transition-colors"
-            >
-              <Plus className="w-5 h-5" />
-              Agregar FIEL
-            </button>
-          </div>
-
-          <div className="mt-8 text-center">
-            <button
-              onClick={handleBackToMenu}
-              className="text-gray-600 hover:text-gray-900 inline-flex items-center gap-2 font-medium"
-            >
-              <ArrowLeft className="w-5 h-5" />
-              Regresar al Menú
-            </button>
-          </div>
-        </div>
+            <CardTitle>No has cargado tu FIEL</CardTitle>
+            <CardDescription>
+              Certificado (.cer), clave privada (.key) y contraseña que te dio el SAT.
+            </CardDescription>
+          </CardHeader>
+          <CardFooter className="justify-center">
+            <Button onClick={() => { setBanner(''); setPhase('form'); }}>
+              <Plus />
+              Cargar FIEL
+            </Button>
+          </CardFooter>
+        </Card>
       </div>
     );
   }
 
-  // Vista cuando tiene FIEL validada
-  if (hasValidFiel && !showForm) {
+  if (phase === 'ready' && fiel) {
     return (
-      <div className="min-h-screen bg-gray-50 p-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Administrar Mi FIEL</h1>
-            <p className="text-gray-600">Gestiona tu Firma Electrónica Avanzada del SAT</p>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-6">
-            <div className="bg-green-50 border-b border-green-100 px-6 py-4 flex items-center gap-3">
-              <CheckCircle className="w-6 h-6 text-green-600" />
-              <div>
-                <div className="font-semibold text-green-900">FIEL Activa y Validada</div>
-                <div className="text-sm text-green-700">Tu firma electrónica está lista para usar</div>
-              </div>
-            </div>
-
-            <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="text-sm font-medium text-gray-500 mb-1 block">RFC</label>
-                  <div className="text-lg font-semibold text-gray-900">{fielData.rfc}</div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500 mb-1 block">Nombre</label>
-                  <div className="text-lg font-semibold text-gray-900">{fielData.nombre}</div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500 mb-1 block">Vigencia Desde</label>
-                  <div className="text-gray-900">{new Date(fielData.vigenciaInicio).toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500 mb-1 block">Vigencia Hasta</label>
-                  <div className="text-gray-900">{new Date(fielData.vigenciaFin).toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
-                </div>
-                <div className="md:col-span-2">
-                  <label className="text-sm font-medium text-gray-500 mb-1 block">Número de Serie del Certificado</label>
-                  <div className="text-gray-900 font-mono text-sm">{fielData.certificadoSerial}</div>
-                </div>
-              </div>
-
-              <div className="mt-8 flex gap-3">
-                <button
-                  onClick={() => setShowForm(true)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-medium inline-flex items-center gap-2 transition-colors"
-                >
-                  <Plus className="w-5 h-5" />
-                  Actualizar FIEL
-                </button>
-                <button
-                  onClick={handleDeleteFiel}
-                  className="bg-white hover:bg-red-50 text-red-600 border border-red-300 px-5 py-2.5 rounded-lg font-medium inline-flex items-center gap-2 transition-colors"
-                >
-                  <Trash2 className="w-5 h-5" />
-                  Eliminar FIEL
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex gap-3">
-            <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-            <div className="text-sm text-blue-900">
-              <strong className="font-medium">Importante:</strong> Mantén tus archivos de FIEL en un lugar seguro. Nunca compartas tu contraseña de clave privada con nadie.
-            </div>
-          </div>
-
-          <div className="mt-8 text-center">
-            <button
-              onClick={handleBackToMenu}
-              className="text-gray-600 hover:text-gray-900 inline-flex items-center gap-2 font-medium"
-            >
-              <ArrowLeft className="w-5 h-5" />
-              Regresar al Menú
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Vista del Formulario
-  return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-2xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            {hasValidFiel ? 'Actualizar FIEL' : 'Agregar FIEL'}
-          </h1>
-          <p className="text-gray-600">Ingresa los datos de tu Firma Electrónica Avanzada del SAT</p>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-          <div className="space-y-6">
+      <div id="fiel" className="space-y-4">
+        {bannerAlert}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CheckCircle className="size-5 text-green-600" />
+              FIEL activa
+            </CardTitle>
+            <CardDescription>Certificado (.cer), clave (.key) y contraseña registrados</CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-6 sm:grid-cols-2">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                RFC <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
+              <p className="text-muted-foreground text-sm">RFC</p>
+              <p className="text-lg font-semibold">{fiel.rfc}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground text-sm">Registrada</p>
+              <p>{fmtDate(fiel.created_at)}</p>
+            </div>
+            <div className="sm:col-span-2">
+              <p className="text-muted-foreground text-sm">Última actualización</p>
+              <p>{fmtDate(fiel.updated_at)}</p>
+            </div>
+          </CardContent>
+          <CardFooter className="gap-2">
+            <Button onClick={() => { setBanner(''); setPhase('form'); }}>
+              <Plus />
+              Actualizar FIEL
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteFiel}>
+              <Trash2 />
+              Eliminar FIEL
+            </Button>
+          </CardFooter>
+        </Card>
+        <Alert>
+          <AlertCircle />
+          <AlertTitle>Importante</AlertTitle>
+          <AlertDescription>No compartas tu contraseña ni los archivos .key / .cer.</AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
+  return (
+    <div id="fiel">
+      {bannerAlert}
+      <Card>
+        <CardHeader>
+          <CardTitle>{fiel ? 'Actualizar FIEL' : 'Cargar FIEL'}</CardTitle>
+          <CardDescription>Certificado (.cer), clave privada (.key) y contraseña</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form className="space-y-6" onSubmit={handleSubmit}>
+            <div className="space-y-2">
+              <Label htmlFor="rfc">RFC</Label>
+              <Input
+                id="rfc"
                 name="rfc"
                 value={formData.rfc}
                 onChange={handleInputChange}
-                placeholder="Ingresa tu RFC"
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors ${
-                  errors.rfc ? 'border-red-500' : 'border-gray-300'
-                }`}
+                placeholder="XAXX010101000"
                 maxLength={13}
+                autoComplete="off"
+                aria-invalid={!!errors.rfc}
               />
-              {errors.rfc && (
-                <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
-                  <AlertCircle className="w-4 h-4" />
-                  {errors.rfc}
-                </p>
-              )}
+              {errors.rfc && <p className="text-destructive text-sm">{errors.rfc}</p>}
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Contraseña de Clave Privada <span className="text-red-500">*</span>
-              </label>
-              <input
+            <div className="space-y-2">
+              <Label htmlFor="fiel-password">Contraseña del certificado</Label>
+              <Input
+                id="fiel-password"
                 type="password"
                 name="password"
                 value={formData.password}
                 onChange={handleInputChange}
-                placeholder="Ingresa tu contraseña"
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors ${
-                  errors.password ? 'border-red-500' : 'border-gray-300'
-                }`}
+                placeholder="Mínimo 8 caracteres"
+                autoComplete="off"
+                aria-invalid={!!errors.password}
               />
-              {errors.password && (
-                <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
-                  <AlertCircle className="w-4 h-4" />
-                  {errors.password}
-                </p>
-              )}
+              {errors.password && <p className="text-destructive text-sm">{errors.password}</p>}
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Clave Privada (KEY) <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <input
-                  type="file"
-                  accept=".key,.pem"
-                  onChange={(e) => handleFileChange(e, 'keyFile')}
-                  className="hidden"
-                  id="keyFile"
-                />
-                <label
-                  htmlFor="keyFile"
-                  className={`flex items-center justify-center gap-2 w-full px-4 py-3 border rounded-lg cursor-pointer transition-colors ${
-                    errors.keyFile 
-                      ? 'border-red-500 bg-red-50 hover:bg-red-100' 
-                      : formData.keyFile
-                      ? 'border-green-500 bg-green-50'
-                      : 'border-gray-300 bg-gray-50 hover:bg-gray-100'
-                  }`}
-                >
-                  <Upload className="w-5 h-5 text-gray-600" />
-                  <span className="text-gray-700">
-                    {formData.keyFile ? formData.keyFile.name : 'Seleccionar archivo .key'}
-                  </span>
+            <div className="space-y-2">
+              <Label htmlFor="keyFile">Clave privada (.key)</Label>
+              <Input id="keyFile" type="file" accept=".key" className="hidden" onChange={(e) => handleFileChange(e, 'keyFile')} />
+              <Button type="button" variant="outline" className="w-full" asChild>
+                <label htmlFor="keyFile" className="cursor-pointer">
+                  <Upload />
+                  {formData.keyFile ? formData.keyFile.name : 'Seleccionar archivo .key'}
                 </label>
-              </div>
-              {errors.keyFile && (
-                <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
-                  <AlertCircle className="w-4 h-4" />
-                  {errors.keyFile}
-                </p>
-              )}
+              </Button>
+              {errors.keyFile && <p className="text-destructive text-sm">{errors.keyFile}</p>}
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Certificado (CER) <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <input
-                  type="file"
-                  accept=".cer,.crt"
-                  onChange={(e) => handleFileChange(e, 'cerFile')}
-                  className="hidden"
-                  id="cerFile"
-                />
-                <label
-                  htmlFor="cerFile"
-                  className={`flex items-center justify-center gap-2 w-full px-4 py-3 border rounded-lg cursor-pointer transition-colors ${
-                    errors.cerFile 
-                      ? 'border-red-500 bg-red-50 hover:bg-red-100' 
-                      : formData.cerFile
-                      ? 'border-green-500 bg-green-50'
-                      : 'border-gray-300 bg-gray-50 hover:bg-gray-100'
-                  }`}
-                >
-                  <FileText className="w-5 h-5 text-gray-600" />
-                  <span className="text-gray-700">
-                    {formData.cerFile ? formData.cerFile.name : 'Seleccionar archivo .cer'}
-                  </span>
+            <div className="space-y-2">
+              <Label htmlFor="cerFile">Certificado (.cer)</Label>
+              <Input id="cerFile" type="file" accept=".cer" className="hidden" onChange={(e) => handleFileChange(e, 'cerFile')} />
+              <Button type="button" variant="outline" className="w-full" asChild>
+                <label htmlFor="cerFile" className="cursor-pointer">
+                  <FileText />
+                  {formData.cerFile ? formData.cerFile.name : 'Seleccionar archivo .cer'}
                 </label>
-              </div>
-              {errors.cerFile && (
-                <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
-                  <AlertCircle className="w-4 h-4" />
-                  {errors.cerFile}
-                </p>
-              )}
+              </Button>
+              {errors.cerFile && <p className="text-destructive text-sm">{errors.cerFile}</p>}
             </div>
-
-            <button
-              onClick={handleSubmit}
-              disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
-            >
-              {loading ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Validando FIEL...
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="w-5 h-5" />
-                  Validar FIEL
-                </>
-              )}
-            </button>
-
-            {hasValidFiel && (
-              <button
-                onClick={() => setShowForm(false)}
-                className="w-full bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 py-3 rounded-lg font-medium transition-colors"
-              >
+            <div className="flex flex-col gap-2">
+              <Button type="submit" disabled={saving}>
+                <CheckCircle />
+                {saving ? 'Guardando FIEL...' : 'Guardar FIEL'}
+              </Button>
+              <Button type="button" variant="outline" onClick={() => { setPhase(fiel ? 'ready' : 'empty'); setBanner(''); }}>
                 Cancelar
-              </button>
-            )}
-          </div>
-        </div>
-
-        <div className="mt-6 bg-amber-50 border border-amber-200 rounded-lg p-4 flex gap-3">
-          <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-          <div className="text-sm text-amber-900">
-            <strong className="font-medium">Nota:</strong> Los archivos .key y .cer son proporcionados por el SAT cuando obtienes tu FIEL. Asegúrate de tener estos archivos antes de continuar.
-          </div>
-        </div>
-
-        <div className="mt-8 text-center">
-          <button
-            onClick={handleBackToMenu}
-            className="text-gray-600 hover:text-gray-900 inline-flex items-center gap-2 font-medium"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            Regresar al Menú
-          </button>
-        </div>
-      </div>
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 };
